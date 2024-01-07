@@ -47,6 +47,20 @@ const getClarifaiRequestOptions = (imageURL) => {
 }
 
 const MODEL_ID = 'face-detection';
+const initialState = {
+  input: '',
+  imageUrl: '',
+  boxes: [],
+  route: 'signin',
+  isSignedIn: false,
+  user: {
+    id: '',
+    name: '',
+    email: '',
+    entries: 0,
+    joined: ''
+  }
+}
 
 class App extends Component {
 
@@ -57,8 +71,27 @@ class App extends Component {
       imageUrl: '',
       boxes: [],
       route: 'signin',
-      isSignedIn: false
+      isSignedIn: false,
+      user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: ''
+      }
     }
+  }
+
+  loadUser = (data) => {
+    this.setState({
+      user: {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        entries: data.entries,
+        joined: data.joined
+      }
+    });
   }
 
   calculateFaceLocation = (data) => {
@@ -89,13 +122,29 @@ class App extends Component {
     this.setState({imageUrl: this.state.input});
     fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/outputs", getClarifaiRequestOptions(this.state.input))
       .then(res => res.json())
-      .then(res => this.displayFaceBox(this.calculateFaceLocation(res)))
+      .then(res => {
+        if (res) {
+          fetch('http://localhost:3000/image', {
+            method: 'put',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+              id: this.state.user.id
+            })
+          })
+          .then(res => res.json())
+          .then(count => {
+            this.setState(Object.assign(this.state.user, { entries: count }))
+          })
+          .catch(console.log);
+        }
+        this.displayFaceBox(this.calculateFaceLocation(res))
+      })
       .catch(err => console.log(err));
   }
 
   onRouteChange = (route) => {
     if (route === 'signout') {
-      this.setState({isSignedIn: false});
+      this.setState(initialState);
     } else if (route === 'home') {
       this.setState({isSignedIn: true});
     }
@@ -112,7 +161,7 @@ class App extends Component {
         { route === 'home'
           ? <div>
               <Logo />
-              <Rank />
+              <Rank name={this.state.user.name} entries={this.state.user.entries}/>
               <ImageLinkForm
                 onInputChange={this.onInputChange}
                 onButtonSubmit={this.onButtonSubmit}
@@ -121,8 +170,8 @@ class App extends Component {
             </div>
           : (
             route === 'signin'
-            ? <SignIn onRouteChange={this.onRouteChange}/>
-            : <Register onRouteChange={this.onRouteChange}/>
+            ? <SignIn onRouteChange={this.onRouteChange} loadUser={this.loadUser}/>
+            : <Register onRouteChange={this.onRouteChange} loadUser={this.loadUser}/>
           )
 
         }
