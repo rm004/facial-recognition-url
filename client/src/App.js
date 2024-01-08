@@ -10,43 +10,6 @@ import ParticlesBg from 'particles-bg'
 
 import './App.css';
 
-const getClarifaiRequestOptions = (imageURL) => {
-  const PAT = '30e74800210a49a9a655a855b619da66';
-
-  const USER_ID = 'rm004';
-  const APP_ID = 'facial-recognition-url';
-
-  const IMAGE_URL = imageURL;
-
-  const raw = JSON.stringify({
-    "user_app_id": {
-      "user_id": USER_ID,
-      "app_id": APP_ID
-    },
-    "inputs": [
-      {
-        "data": {
-          "image": {
-            "url": IMAGE_URL
-          }
-        }
-      }
-    ]
-  });
-
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Authorization': 'Key ' + PAT
-    },
-    body: raw
-  };
-
-  return requestOptions;
-}
-
-const MODEL_ID = 'face-detection';
 const initialState = {
   input: '',
   imageUrl: '',
@@ -120,11 +83,17 @@ class App extends Component {
 
   onButtonSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    fetch("https://api.clarifai.com/v2/models/" + MODEL_ID + "/outputs", getClarifaiRequestOptions(this.state.input))
+    fetch('https://cryptic-forest-86068-10afef6343ba.herokuapp.com/image', {
+      method: 'post',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        input: this.state.input
+      })
+    })
       .then(res => res.json())
       .then(res => {
         if (res) {
-          fetch('http://localhost:3000/image', {
+          fetch('https://cryptic-forest-86068-10afef6343ba.herokuapp.com/image', {
             method: 'put',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
